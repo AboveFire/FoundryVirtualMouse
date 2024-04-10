@@ -6,7 +6,7 @@
     "minimum": "11",
     "verified": "11"
   },
-  "description": "Implementation of the packge from https://github.com/mmiscool/JS-virtual-Touchpad to work with Foundry",
+  "description": "A virtual mouse for mobile users with left/right click and scroll support, it translates touches to mouse inputs",
   "authors": [
     {
       "name": "AboveFire",
@@ -17,5 +17,7 @@
   "esmodules": [
     "mouse/checkIfMobile.js"
   ],
-  "url": "https://github.com/mmiscool/JS-virtual-Touchpad"
+  "url": "https://github.com/AboveFire/FoundryVirtualMouse",
+  "manifest": "https://raw.githubusercontent.com/AboveFire/FoundryVirtualMouse/master/module.json",
+  "download": "https://raw.githubusercontent.com/AboveFire/FoundryVirtualMouse/master/releases/virtual-mouse1.0.0.json"
 }
