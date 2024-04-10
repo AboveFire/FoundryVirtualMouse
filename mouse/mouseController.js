@@ -1,7 +1,3 @@
-/*document.body.innerHTML += `
-  <svg id="cursor" xmlns="http://www.w3.org/2000/svg" viewBox="-10003 -10003 20010 20010">
-  <path d="M 0 0 L 0 10000 Z M 0 0 L 0 -10000 M 0 0 L -10000 0 M 0 0 L 10000 0 M 25 0 A 1 1 0 0 0 -25 0 A 1 1 0 0 0 25 0" stroke="black" stroke-width="3" fill="none"/>
-  </svg>`;*/
 $(document.body).append(`
   <svg id="cursor" xmlns="http://www.w3.org/2000/svg" viewBox="-10003 -10003 20010 20010">
   <path d="M 0 0 L 0 10000 Z M 0 0 L 0 -10000 M 0 0 L -10000 0 M 0 0 L 10000 0 M 25 0 A 1 1 0 0 0 -25 0 A 1 1 0 0 0 25 0" stroke="black" stroke-width="3" fill="none"/>
@@ -29,7 +25,20 @@ const mouseObject = {
 
 var lastTouchX = 0;
 var lastTouchY = 0;
+var lastTouchStartTime = 0;
+var lastTouchStartTimeLeftButton = 0;
+var lastTouchStartTimeRightButton = 0;
 
+var timer1;
+var timer2;
+var timerLeftButton;
+var timerRightButton;
+var longTouchDuration = 500;
+var shortTouchDuration = 200;
+var shortTouchDurationButton = 400;
+var touchPadLongPress1 = false;
+var touchPadLongPress2 = false;
+var ignoreSinglePress = false;
 var speed = 0.6;
 
 //const pointerTarget = document.getElementById("pointerTarget");
@@ -44,32 +53,66 @@ function sendNewEvent(eventType) {
 document.getElementById("touchpadArea").addEventListener("touchstart", function (event) {
   if (window.innerHeight !== screen.height) document.body.requestFullscreen();
 
-  if (event.touches.length == 1){
-    lastTouchX = event.touches[0].clientX;
-    lastTouchY = event.touches[0].clientY;
+  let numTouches = event.touches.length;
+  lastTouchStartTime = Date.now();
+  lastTouchX = event.touches[0].clientX;
+  lastTouchY = event.touches[0].clientY;
+  if (numTouches == 1){
+    timer1 = setTimeout(function() {
+        touchPadLongPress1 = true;
+        longPressLeftMouseButton();
+    }, longTouchDuration); 
+  }else if(numTouches == 2){
+    ignoreSinglePress = true;
+    setTimeout(function() {
+        ignoreSinglePress = false;
+    }, shortTouchDuration);
+    timer2 = setTimeout(function() {
+        touchPadLongPress2 = true;
+        longPressRightMouseButton();
+    }, longTouchDuration); 
   }
+  //Set timeout for long touch detection
+  
 
-  if (event.touches.length ==2){
-    lastScrollY = event.touches[0].clientY;
-    zooming = true;
-  }
   event.preventDefault();
   event.stopPropagation();
 });
 
 
 document.getElementById("touchpadArea").addEventListener("touchend", function (event) {
-  if (event.touches.length ==2){
-    zooming = false;
-    mouseObject.deltaY = 0;
-    lastScrollY = 0;
+  let numTouches = event.touches.length;
+  if(lastTouchStartTime + shortTouchDuration > Date.now()){
+    // short tap for click
+    if(numTouches == 0 && !ignoreSinglePress){
+        clickLeftMouseButton();
+    }else if(numTouches > 0){
+        clickRightMouseButton();
+    }
+  }
+  if (timer1 && numTouches == 0){
+    // Touch not long enough for timer
+    clearTimeout(timer1);
+  }
+  
+  if (timer2 && numTouches > 0){
+    // Touch not long enough for timer
+    clearTimeout(timer2);
+  }
+  if(touchPadLongPress1){
+    touchPadLongPress1 = false;
+    clickLeftMouseButton();
+  }
+  if(touchPadLongPress2){
+    touchPadLongPress2 = false;
+    releaseRightButton();
   }
   event.preventDefault();
   event.stopPropagation();
 });
 
 document.getElementById("touchpadArea").addEventListener("click", async function (event) {
-  document.getElementById("leftMouseButton").click();
+  clickLeftMouseButton();
   event.preventDefault();
   event.stopPropagation();
 });
@@ -77,20 +120,18 @@ document.getElementById("touchpadArea").addEventListener("click", async function
 document.getElementById("touchpadArea").addEventListener("dblclick", function (event) {
   event.preventDefault();
   event.stopPropagation();
-  //document.getElementById("leftMouseButton").click();
   sendNewEvent("dblclick");
 });
 
-document.getElementById("touchpadArea").addEventListener("contextmenu", function (event) {
-  event.preventDefault();
-  event.stopPropagation();
-  document.getElementById("leftMouseButton").dispatchEvent(new CustomEvent("contextmenu"));
-});
 
 document.getElementById("touchpadArea").addEventListener("touchmove", function (event) {
   event.preventDefault();
   event.stopPropagation();
-  if (event.touches.length == 1){
+  if (timer1){
+    // Touch moved cancel long press
+    clearTimeout(timer1);
+  }
+  if (event.touches.length == 1 || event.touches.length == 2){
     let x = event.touches[0].clientX;
     let y = event.touches[0].clientY;
   
@@ -111,74 +152,54 @@ document.getElementById("touchpadArea").addEventListener("touchmove", function (
   
     sendNewEvent("mousemove");
   }
-
-  if (event.touches.length == 2){
-    //zoom zoom zoom
-    console.log("zoom zoom zoom")
-
-    let y = event.touches[0].clientY;
-    let difrenceY = y - lastScrollY;
-    lastScrollY = y;
-    mouseObject.deltaY = difrenceY / 10000;
-    sendNewEvent("zoom");
-  }
 });
 
-document.getElementById("leftMouseButton").addEventListener("contextmenu", function (event) {
+document.getElementById("leftMouseButton").addEventListener("touchstart", function (event) {
+  lastTouchStartTimeLeftButton = Date.now();
+  //Set timeout for long touch detection
+  timerLeftButton = setTimeout(longPressLeftMouseButton, longTouchDuration); 
   event.preventDefault();
   event.stopPropagation();
-  if (event.target.innerHTML == "🔒") {
-    event.target.innerHTML = "🔓";
-    mouseObject.leftMouseDown = false;
-    event.target.style.backgroundColor = InactiveButtonBackgroundColor;
-    sendNewEvent("mousemove");
-  } else {
-    event.target.innerHTML = "🔒";
-    mouseObject.leftMouseDown = true;
-    event.target.style.backgroundColor = ActiveButtonBackgroundColor;
-    sendNewEvent("mousemove");
-  }
 });
 
-document.getElementById("rightMouseButton").addEventListener("contextmenu", function (event) {
+
+document.getElementById("leftMouseButton").addEventListener("touchend", function (event) {
+  if (timerLeftButton){
+    // Touch not long enough for timer
+    clearTimeout(timerLeftButton);
+  }
+  
+  if(lastTouchStartTimeLeftButton + shortTouchDurationButton > Date.now()){
+    // short tap for click
+    clickLeftMouseButton();
+  }
+  
   event.preventDefault();
   event.stopPropagation();
-  if (event.target.innerHTML == "🔒") {
-    event.target.innerHTML = "🔓";
-    mouseObject.rightMouseDown = false;
-    event.target.style.backgroundColor = InactiveButtonBackgroundColor;
-    sendNewEvent("mousemove");
-  } else {
-    event.target.innerHTML = "🔒";
-    mouseObject.rightMouseDown = true;
-    event.target.style.backgroundColor = ActiveButtonBackgroundColor;
-    sendNewEvent("mousemove");
-  }
 });
 
-document.getElementById("leftMouseButton").addEventListener("click", function (event) {
+document.getElementById("rightMouseButton").addEventListener("touchstart", function (event) {
+  lastTouchStartTimeRightButton = Date.now();
+  //Set timeout for long touch detection
+  timerRightButton = setTimeout(longPressRightMouseButton, longTouchDuration); 
   event.preventDefault();
   event.stopPropagation();
-  if (event.target.innerHTML == "🔒") {
-    event.target.innerHTML = "🔓";
-    mouseObject.leftMouseDown = false;
-    event.target.style.backgroundColor = InactiveButtonBackgroundColor;
-    sendNewEvent("mousemove");
-  }
-  doLeftClick();
 });
 
-document.getElementById("rightMouseButton").addEventListener("click", function (event) {
+
+document.getElementById("rightMouseButton").addEventListener("touchend", function (event) {
+  if (timerRightButton){
+    // Touch not long enough for timer
+    clearTimeout(timerRightButton);
+  }
+  
+  if(lastTouchStartTimeRightButton + shortTouchDurationButton > Date.now()){
+    // short tap for click
+    clickRightMouseButton();
+  }
+  
   event.preventDefault();
   event.stopPropagation();
-  if (event.target.innerHTML == "🔒") {
-    event.target.innerHTML = "🔓";
-    mouseObject.rightMouseDown = false;
-    event.target.style.backgroundColor = InactiveButtonBackgroundColor;
-    sendNewEvent("mousemove");
-  }else{
-    doRightClick();
-  }
 });
 
 document.getElementById("ScrollDown").addEventListener("click", function (event) {
@@ -198,14 +219,84 @@ $("#touchpadArea").on("pointerup pointerdown pointermove", function (e) {
   e.preventDefault();
   e.stopPropagation();
 });
-$("#leftMouseButton").on("pointerup pointerdown pointermove", function (e) {
+$("#leftMouseButton").on("pointerup pointerdown pointermove contextmenu", function (e) {
   e.preventDefault();
   e.stopPropagation();
 });
-$("#rightMouseButton").on("pointerup pointerdown pointermove", function (e) {
+$("#rightMouseButton").on("pointerup pointerdown pointermove contextmenu", function (e) {
   e.preventDefault();
   e.stopPropagation();
 });
+
+function clickLeftMouseButton() {
+    releaseLeftButton()
+    doLeftClick();
+}
+
+function clickRightMouseButton() {
+  if (!releaseRightButton()) {
+    doRightClick();
+  }
+}
+
+function releaseLeftButton(){
+    let leftButton = document.getElementById("leftMouseButton");
+    if(releaseButton(leftButton)) {
+        mouseObject.leftMouseDown = false;
+        return true;
+    }
+    return false;
+}
+
+function releaseRightButton(){
+    let rightButton = document.getElementById("rightMouseButton");
+    if(releaseButton(rightButton)) {
+        mouseObject.rightMouseDown = false;
+        return true;
+    }
+    return false;
+}
+
+function releaseButton(buttonToRelease) {
+  if (buttonToRelease.innerHTML == "🔒") {
+    buttonToRelease.innerHTML = "🔓";
+    buttonToRelease.style.backgroundColor = InactiveButtonBackgroundColor;
+    sendNewEvent("mousemove");
+    return true;
+  }
+  // Nothing to release
+  return false;
+}
+
+function longPressLeftMouseButton() {
+  let leftButton = document.getElementById("leftMouseButton");
+  if (leftButton.innerHTML == "🔒") {
+    leftButton.innerHTML = "🔓";
+    mouseObject.leftMouseDown = false;
+    leftButton.style.backgroundColor = InactiveButtonBackgroundColor;
+    sendNewEvent("mousemove");
+  } else {
+    leftButton.innerHTML = "🔒";
+    mouseObject.leftMouseDown = true;
+    leftButton.style.backgroundColor = ActiveButtonBackgroundColor;
+    sendNewEvent("mousemove");
+  }
+}
+
+function longPressRightMouseButton() {
+  let rightButton = document.getElementById("rightMouseButton");
+  if (rightButton.innerHTML == "🔒") {
+    rightButton.innerHTML = "🔓";
+    mouseObject.rightMouseDown = false;
+    rightButton.style.backgroundColor = InactiveButtonBackgroundColor;
+    sendNewEvent("mousemove");
+  } else {
+    rightButton.innerHTML = "🔒";
+    mouseObject.rightMouseDown = true;
+    rightButton.style.backgroundColor = ActiveButtonBackgroundColor;
+    sendNewEvent("mousemove");
+  }
+}
 
 function toggleMousepad(showHide) {
   if (showHide) {
@@ -231,26 +322,11 @@ function doRightClick() {
 }
 
 var lastScrollY = 0;
-var zooming = false;
 
 window.addEventListener("message", function (event) {
-  console.log("Message received from the child: "); // Message received from child
-  console.log(event.data);
+  //console.log("Message received from the child: "); // Message received from child
   if (event.data == "showTouchpad") toggleMousepad("show");
 });
-
-
-
-/*pointerTarget.onload = function () {
-  console.log("LOADING POINTER");
-  const elem = document.createElement(`script`);
-  elem.src = "modules/virtual-mouse/mouse/virtualMousePointer.js";
-  elem.type="module";
-
-  pointerTarget.contentDocument.body.appendChild(elem);
-
-  console.log(window.location);
-};*/
 
 document.body.onload = function () {
   try {
@@ -265,13 +341,11 @@ document.getElementById("saveSettings").onclick = function (event) {
   speed = localStorage.mouseSpeed;
   document.getElementById("mouse-settings").style.display = "none";
   document.getElementById("virtual-mouse-controls").style.width = "0px";
-  document.getElementById("virtual-mouse-controls").style.heigth = "0px";
+  document.getElementById("virtual-mouse-controls").style.height = "0px";
+  document.getElementById("virtual-mouse-controls").style.margin = "0px";
+  document.getElementById("virtual-mouse-controls").style.padding = "0px";
+  document.getElementById("virtual-mouse-controls").getElementsByClassName("window-content")[0].style.background = "unset";
+  document.getElementById("virtual-mouse-controls").getElementsByClassName("window-header")[0].style.display = "none";
   document.getElementById("virtual-mouse-controls").style.top = "0px";
-  document.getElementById("virtual-mouse-controls").style.left = "-100px";
+  document.getElementById("virtual-mouse-controls").style.left = "0px";
 };
-
-/*document.getElementById("settingsButton").onclick = function (event) {
-  document.getElementById("mouse-settings").style.display = "";
-  //console.log("dats the window locations", window.location.search);
-};*/
-

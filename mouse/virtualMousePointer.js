@@ -1,6 +1,6 @@
 //Allways keep page at propper position,
 // prevents page scrolling acidentally due to html elements going out of view.
-let mouseDebugger = true;
+let mouseDebugger = false;
 
 window.setInterval(function () {
   window.scrollTo(0, 0);
@@ -81,7 +81,6 @@ window.addEventListener(
 
     let newMouseOverList = [];
     mouseOverList.forEach((item, key) => {
-        console.log(itemsUnderMouse);
       if (!itemsUnderMouse.includes(item)) {
         mouseOutObjects.push(item);
       } else {
@@ -110,7 +109,6 @@ function elementsFromPointIgnoreMouse(absoluteX, absoluteY){
 }
 
 function doTheProperEvents(item) {
-    console.log(eventType);
   if (eventType == "mousemove") {
     exicuteEvents(item, ["pointermove", "mousemove"]);
 
