@@ -1,0 +1,21 @@
+{
+  "id": "virtual-mouse",
+  "title": "Virtual Mouse",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "11",
+    "verified": "11"
+  },
+  "description": "Implementation of the packge from https://github.com/mmiscool/JS-virtual-Touchpad to work with Foundry",
+  "authors": [
+    {
+      "name": "AboveFire",
+      "discord": "AboveFire",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "mouse/checkIfMobile.js"
+  ],
+  "url": "https://github.com/mmiscool/JS-virtual-Touchpad"
+}
