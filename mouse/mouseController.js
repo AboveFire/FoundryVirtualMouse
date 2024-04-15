@@ -1,7 +1,18 @@
-$(document.body).append(`
-  <svg id="cursor" xmlns="http://www.w3.org/2000/svg" viewBox="-10003 -10003 20010 20010">
-  <path d="M 0 0 L 0 10000 Z M 0 0 L 0 -10000 M 0 0 L -10000 0 M 0 0 L 10000 0 M 25 0 A 1 1 0 0 0 -25 0 A 1 1 0 0 0 25 0" stroke="black" stroke-width="3" fill="none"/>
-  </svg>`);
+if (
+    navigator.userAgent.match(/iPhone/i) ||
+    navigator.userAgent.match(/iPad/i) ||
+    navigator.userAgent.match(/iPod/i))
+{
+    // If IOS, load png for cursor
+    $(document.body).append(`<img id="cursor" src="/modules/virtual-mouse/mouse/darkX.png" width="20000" height="20000">`);
+} else {
+    // Load svg for cursor
+    $(document.body).append(`
+    <svg id="cursor" xmlns="http://www.w3.org/2000/svg" viewBox="-10003 -10003 20010 20010">
+    <path d="M 0 0 L 0 10000 Z M 0 0 L 0 -10000 M 0 0 L -10000 0 M 0 0 L 10000 0 M 25 0 A 1 1 0 0 0 -25 0 A 1 1 0 0 0 25 0" stroke="black" stroke-width="3" fill="none"/>
+    </svg>`);
+}
+
 
 cursor = document.getElementById("cursor");
 cursor.style.width = "100px";
@@ -28,14 +39,21 @@ var lastTouchY = 0;
 var lastTouchStartTime = 0;
 var lastTouchStartTimeLeftButton = 0;
 var lastTouchStartTimeRightButton = 0;
+var lastTouchStartTimeScrollUpButton = 0;
+var lastTouchStartTimeScrollDownButton = 0;
 
 var timer1;
 var timer2;
 var timerLeftButton;
 var timerRightButton;
-var longTouchDuration = 500;
+var timerScrollUpButton;
+var timerScrollDownButton;
+var repetitiveScrollUp;
+var repetitiveScrollDown;
+
+var longTouchDuration = 400;
 var shortTouchDuration = 200;
-var shortTouchDurationButton = 400;
+var shortTouchDurationButton = 300;
 var touchPadLongPress1 = false;
 var touchPadLongPress2 = false;
 var ignoreSinglePress = false;
@@ -120,7 +138,7 @@ document.getElementById("touchpadArea").addEventListener("click", async function
 document.getElementById("touchpadArea").addEventListener("dblclick", function (event) {
   event.preventDefault();
   event.stopPropagation();
-  sendNewEvent("dblclick");
+  //sendNewEvent("dblclick");
 });
 
 
@@ -202,16 +220,56 @@ document.getElementById("rightMouseButton").addEventListener("touchend", functio
   event.stopPropagation();
 });
 
-document.getElementById("ScrollDown").addEventListener("click", function (event) {
+document.getElementById("ScrollDown").addEventListener("touchstart", function (event) {
+  lastTouchStartTimeScrollDownButton = Date.now();
+  //Set timeout for long touch detection
+  timerScrollDownButton = setTimeout(holdPressScrollDownButton, longTouchDuration);
   event.preventDefault();
   event.stopPropagation();
-  sendNewEvent("scrollDown");
 });
 
-document.getElementById("ScrollUp").addEventListener("click", function (event) {
+document.getElementById("ScrollDown").addEventListener("touchend", function (event) {
+    if (timerScrollDownButton) {
+        // Touch not long enough for timer
+        clearTimeout(timerScrollDownButton);
+    }
+    if (repetitiveScrollDown) {
+        // Stopped holding press
+        clearInterval(repetitiveScrollDown);
+        holdReleaseButton(document.getElementById("ScrollDown"));
+    }
+    if (lastTouchStartTimeScrollDownButton + shortTouchDurationButton > Date.now()) {
+        // short tap for click
+        sendNewEvent("scrollDown");
+    }
+    event.preventDefault();
+    event.stopPropagation();
+});
+
+document.getElementById("ScrollUp").addEventListener("touchstart", function (event) {
+  lastTouchStartTimeScrollUpButton = Date.now();
+  //Set timeout for long touch detection
+  timerScrollUpButton = setTimeout(holdPressScrollUpButton, longTouchDuration);
   event.preventDefault();
   event.stopPropagation();
-  sendNewEvent("scrollUp");
+});
+
+document.getElementById("ScrollUp").addEventListener("touchend", function (event) {
+  if (timerScrollUpButton) {
+      // Touch not long enough for timer
+      clearTimeout(timerScrollUpButton);
+  }
+  if (repetitiveScrollUp) {
+      // Stopped holding press
+      clearInterval(repetitiveScrollUp);
+      holdReleaseButton(document.getElementById("ScrollUp"));
+  }
+  if (lastTouchStartTimeScrollUpButton + shortTouchDurationButton > Date.now()) {
+      // short tap for click
+      sendNewEvent("scrollUp");
+  }
+  event.preventDefault();
+  event.stopPropagation();
 });
 
 //Listeners to stop propagation
@@ -297,6 +355,30 @@ function longPressRightMouseButton() {
     sendNewEvent("mousemove");
   }
 }
+function holdPressScrollUpButton() {
+    let scrollUpButton = document.getElementById("ScrollUp");
+    holdPressButton(scrollUpButton);
+    repetitiveScrollUp = window.setInterval(function () {
+        sendNewEvent("scrollUp");
+    }, 150);
+}
+
+function holdPressScrollDownButton() {
+    let scrollDownButton = document.getElementById("ScrollDown");
+    holdPressButton(scrollDownButton);
+    repetitiveScrollDown = window.setInterval(function () {
+        sendNewEvent("scrollDown");
+    }, 150);
+}
+
+function holdPressButton(heldButton) {
+    heldButton.style.backgroundColor = ActiveButtonBackgroundColor;
+}
+
+function holdReleaseButton(heldButton) {
+    heldButton.style.backgroundColor = InactiveButtonBackgroundColor;
+}
+
 
 function toggleMousepad(showHide) {
   if (showHide) {

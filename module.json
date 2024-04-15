@@ -1,7 +1,7 @@
 {
   "id": "virtual-mouse",
   "title": "Virtual Mouse",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "compatibility": {
     "minimum": "11",
     "verified": "11"
@@ -19,5 +19,5 @@
   ],
   "url": "https://github.com/AboveFire/FoundryVirtualMouse",
   "manifest": "https://raw.githubusercontent.com/AboveFire/FoundryVirtualMouse/master/module.json",
-  "download": "https://raw.githubusercontent.com/AboveFire/FoundryVirtualMouse/master/releases/virtual-mouse1.0.0.zip"
+  "download": "https://raw.githubusercontent.com/AboveFire/FoundryVirtualMouse/master/releases/virtual-mouse1.0.1.zip"
 }
