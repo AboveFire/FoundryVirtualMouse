@@ -8,7 +8,7 @@ Hooks.on('canvasReady', function(){
       navigator.userAgent.match(/iPod/i) ||
       navigator.userAgent.match(/BlackBerry/i) ||
       navigator.userAgent.match(/Windows Phone/i)
-    )
+	)
     {
       // the user is using a mobile device, so redirect to the mobile version of the website
       function opencontrols() {

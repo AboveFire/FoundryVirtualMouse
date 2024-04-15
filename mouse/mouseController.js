@@ -1,17 +1,19 @@
-if (
+/*if (
     navigator.userAgent.match(/iPhone/i) ||
     navigator.userAgent.match(/iPad/i) ||
-    navigator.userAgent.match(/iPod/i))
+    navigator.userAgent.match(/iPod/i))*/
+if(true)
 {
     // If IOS, load png for cursor
-    $(document.body).append(`<img id="cursor" src="/modules/virtual-mouse/mouse/darkX.png" width="20000" height="20000">`);
+    $(document.body).append(`<div id="cursor">X</div>`);
 } else {
     // Load svg for cursor
     $(document.body).append(`
-    <svg id="cursor" xmlns="http://www.w3.org/2000/svg" viewBox="-10003 -10003 20010 20010">
+    <svg id="cursor" class="cursorsvg" xmlns="http://www.w3.org/2000/svg" viewBox="-10003 -10003 20010 20010">
     <path d="M 0 0 L 0 10000 Z M 0 0 L 0 -10000 M 0 0 L -10000 0 M 0 0 L 10000 0 M 25 0 A 1 1 0 0 0 -25 0 A 1 1 0 0 0 25 0" stroke="black" stroke-width="3" fill="none"/>
     </svg>`);
 }
+//$(document.body).append(`<div id="cursor">X</div>`);
 
 
 cursor = document.getElementById("cursor");
